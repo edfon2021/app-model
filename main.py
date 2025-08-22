@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 
 # Inicializar la app de modelos predictivos y el modulo de clusterizacion
+## Forzar despliege
 app = FastAPI(title="API Modelos")
 
 # Cargar modelos previamente entrenados
