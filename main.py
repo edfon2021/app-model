@@ -4,7 +4,7 @@ import joblib
 import numpy as np
 import pandas as pd
 
-# Inicializar la app de modelos predictivos
+# Inicializar la app de modelos predictivos y el modulo de clusterizacion
 app = FastAPI(title="API Modelos")
 
 # Cargar modelos previamente entrenados
