@@ -4,15 +4,20 @@ import joblib
 import numpy as np
 import pandas as pd
 from azure.cosmos import CosmosClient, exceptions
-import os
-## Conexion directa con BD de Viviendas registradas en COSMO DB
+
+## Conexion directa con BD de Viviendas registradas
+ENDPOINT = "https://api-modelo.documents.azure.com:443/"
+KEY = "KBiOgWjeQvFQsPsyYfk71acw8H1B9kwD62YgyeJEJyhILsqlwK9II7TS1tUUPABmbgFZkK0gEf4hACDbKlUWhQ=="
+DATABASE_NAME = "InmobiliariaDB"
+CONTAINER_NAME = "Viviendas"
+
 
 # Conectar a Cosmos DB
 print("Conectando a Azure Cosmos DB...")
 try:
-    cosmos_client  = os.getenv("COSMOS_ENDPOINT")
-    database_client  = os.getenv("COSMOS_KEY")
-    container_client  = CosmosClient(cosmos_client, credential=database_client)
+    cosmos_client  = CosmosClient(ENDPOINT, credential=KEY)
+    database_client  = cosmos_client .get_database_client(DATABASE_NAME)
+    container_client  = database_client.get_container_client(CONTAINER_NAME)
     print("Conexión exitosa.")
 except Exception as e:
     print(f"Error al conectar con Cosmos DB: {e}")
