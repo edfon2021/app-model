@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from azure.cosmos import CosmosClient, exceptions
 import os
-## Conexion directa con BD de Viviendas registradas
+## Conexion directa con BD de Viviendas registradas en COSMO DB
 
 # Conectar a Cosmos DB
 print("Conectando a Azure Cosmos DB...")
