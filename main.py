@@ -3,6 +3,21 @@ from pydantic import BaseModel
 import joblib
 import numpy as np
 import pandas as pd
+from azure.cosmos import CosmosClient, exceptions
+import os
+
+
+# Conectar a Cosmos DB
+print("Conectando a Azure Cosmos DB...")
+try:
+    cosmos_client  = os.getenv("COSMOS_ENDPOINT")
+    database_client  = os.getenv("COSMOS_KEY")
+    container_client  = CosmosClient(cosmos_client, credential=database_client)
+    print("Conexión exitosa.")
+except Exception as e:
+    print(f"Error al conectar con Cosmos DB: {e}")
+    exit()
+
 
 # --- 1. CARGA DE TODOS LOS ARTEFACTOS ---
 # Asegúrate de que todos estos archivos .pkl estén en la misma carpeta que main.py
@@ -42,6 +57,22 @@ class ViviendaData(BaseModel):
                 "Habitaciones_mt2": 0.06, "Tipo": "Vivienda Lujo","Zona": "Urbana","Obra": "Completa"
             }
         }
+## Parametros de busquedas
+param_busqueda_rmse ={"0":2441, '1':3431, "2":1994}
+class SearchData(BaseModel):
+    cluster: int
+    precio: float
+    tipo: str
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "cluster": 1,
+                "precio": 250000,
+                "tipo": "Vivienda Lujo"
+            }
+        }
+
 
 # --- 4. ENDPOINTS DE LA API ---
 
@@ -139,3 +170,56 @@ def predict_cluster(data: ViviendaData):
         raise HTTPException(status_code=500, detail=f"Error en la predicción del clúster: {e}")
 
     return {"input_original": data.dict(), "cluster": int(cluster)}
+
+
+@app.post("/search/viviendas", summary="Busca viviendas similares por clúster, precio y tipo")
+def search_viviendas(data: SearchData):
+    """
+    Busca en la base de datos viviendas que cumplan con los siguientes criterios:
+    1. Pertenecen al clúster especificado.
+    2. Su precio está en un rango de [precio - RMSE, precio + RMSE].
+    3. Son del tipo de vivienda especificado.
+    """
+    if not container_client:
+        raise HTTPException(status_code=503, detail="La conexión con la base de datos no está disponible.")
+
+    # 1. Obtener el RMSE del diccionario
+    rmse = param_busqueda_rmse.get(str(data.cluster))
+    if rmse is None:
+        raise HTTPException(status_code=400, detail=f"Clúster '{data.cluster}' no es válido. Los clústeres válidos son {list(param_busqueda_rmse.keys())}.")
+
+    # 2. Calcular el rango de precios (min y max)
+    min_precio = data.precio - rmse
+    max_precio = data.precio + rmse
+
+    # 3. Validar que el rango sea positivo
+    if min_precio <= 0 or max_precio <= 0:
+        # Si el rango no es válido, se descarta la búsqueda y se devuelve una lista vacía.
+        return []
+
+    # 4. Construir la consulta para Cosmos DB (¡parametrizada para seguridad!)
+    query = (
+        "SELECT * FROM c WHERE c.Cluster = @cluster "
+        "AND c.Precio >= @min_precio "
+        "AND c.Precio <= @max_precio "
+        "AND c.Tipo = @tipo"
+    )
+
+    parameters = [
+        {"name": "@cluster", "value": data.cluster},
+        {"name": "@min_precio", "value": min_precio},
+        {"name": "@max_precio", "value": max_precio},
+        {"name": "@tipo", "value": data.tipo},
+    ]
+
+    # 5. Ejecutar la consulta y devolver los resultados
+    try:
+        # Nota: Asumimos que has añadido un campo "cluster" a tus documentos en Cosmos DB
+        results = list(container_client.query_items(
+            query=query,
+            parameters=parameters,
+            enable_cross_partition_query=True  # Necesario si no filtras por la clave de partición 'id'
+        ))
+        return results
+    except exceptions.CosmosHttpResponseError as e:
+        raise HTTPException(status_code=500, detail=f"Error al consultar la base de datos: {e.message}")
