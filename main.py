@@ -217,9 +217,10 @@ def search_viviendas(data: SearchData):
         {"name": "@tipo", "value": data.tipo},
     ]
 
+
     # 5. Ejecutar la consulta y devolver los resultados
     try:
-        # Nota: Asumimos que has añadido un campo "cluster" a tus documentos en Cosmos DB
+        
         results = list(container_client.query_items(
             query=query,
             parameters=parameters,
