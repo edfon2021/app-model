@@ -29,7 +29,8 @@ except Exception as e:
 print("Cargando artefactos...")
 try:
     rf_model = joblib.load("random_forest_model.pkl")
-    kproto_model = joblib.load("kprototypes_model.pkl")
+    #kproto_model = joblib.load("kprototypes_model.pkl")
+    kproto_model = joblib.load("kprototypes_model_K6.pkl")
     encoders = joblib.load("label_encoders.pkl")
     scaler = joblib.load("standar_escaler.pkl") # Corregí el nombre a 'standarD_escaler.pkl'
     print("Todos los artefactos cargados correctamente.")
