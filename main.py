@@ -64,7 +64,7 @@ class ViviendaData(BaseModel):
             }
         }
 ## Parametros de busquedas
-param_busqueda_rmse ={"0":2441, '1':3431, "2":1994}
+param_busqueda_rmse ={"0":2441, '1':3431, "2":1994,"3":1994, "4":1995, "5":2441}
 class SearchData(BaseModel):
     cluster: int
     precio: float
